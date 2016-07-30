@@ -44,7 +44,8 @@ class Parser:
 	op_dict = { "+": lambda a, b: a + b,
 				"-": lambda a, b: a - b,
 				"*": lambda a, b: a * b,
-				"/": lambda a, b: a / b}
+				"/": lambda a, b: a / b,
+				"%": lambda a, b: a % b}
 
 	non_zero_digits = "123456789"
 	digits = "0" + non_zero_digits
@@ -170,7 +171,7 @@ class Parser:
 		self._whitespace()
 
 		expr_op = self.stream[self.stream_index]
-		while expr_op in "*/":
+		while expr_op in "*/%":
 			self.stream_index += 1
 
 			self._whitespace()
