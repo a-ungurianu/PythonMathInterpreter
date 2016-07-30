@@ -1,10 +1,10 @@
 import argparse, os
 
-class Tokenizer:
-	def __init__(self):
-		pass
-	def tokenize(self, exp_string):
-		return []
+class ParseError(Exception):
+	def __init__(self, value):
+		self.value = value
+	def __str__(self):
+		return repr(self.value)
 
 class ASTNode(object):
 
@@ -56,10 +56,13 @@ class Parser:
 		self.stream_index = 0
 		self.stream = exp_string + "$"
 
-		ast = self._expression()
-
-		if self.stream[self.stream_index] != "$":
-			return None
+		try:
+			ast = self._expression()
+			if self.stream[self.stream_index] != "$":
+				return None
+		except ParseError as e:
+			print(e)
+			raise ParseError("Failed to parse expression")
 
 		return ast
 
@@ -75,8 +78,7 @@ class Parser:
 
 		# If parsing fails, jump back
 		if term_node is None:
-			self.stream_index = orig_ind
-			return None
+			raise ParseError("Term expected in expression at position {}!".format(self.stream_index))
 
 		# Trim
 		self._whitespace()
@@ -93,8 +95,7 @@ class Parser:
 
 			# If parsing fails, jump back
 			if next_term is None:
-				self.stream_index = orig_ind
-				return None
+				raise ParseError("Term expected in expression at position {0} after {1}!".format(self.stream_index, expr_op))
 
 			# Left-derive expression
 			term_node = BinaryExpression(term_node, next_term, self.op_dict[expr_op])
@@ -207,8 +208,12 @@ def main():
 
 		# read every expression from the given file
 		for line in args.file:
-			expression_ast = expression_parser.parse(line)
-			print(expression_ast.eval())
+			try:
+				expression_ast = expression_parser.parse(line)
+			except ParseError as e:
+				print(e)
+			else:
+				print(expression_ast.eval())
 
 	except FileNotFoundError:
 		print("Please pass a valid filename")
