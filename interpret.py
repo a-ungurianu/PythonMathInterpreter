@@ -123,8 +123,8 @@ class Parser:
 			self.stream_index += 1
 
 		try:
-			if number_str[0] == "0" and float(number_str) != 0:
-				raise ValueError()
+			if number_str[0] == "0" and number_str.split(".")[0] != "0":
+				raise ValueError
 
 			number = float(number_str)
 			return Number(number)
