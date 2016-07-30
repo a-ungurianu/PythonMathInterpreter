@@ -1,5 +1,10 @@
 import argparse, os
 
+class Tokenizer:
+	def __init__(self):
+		pass
+	def tokenize(self,exp_string):
+		return []
 class Parser:
 	def __init__(self):
 		pass
