@@ -1,5 +1,7 @@
 import argparse, os
 
+import string
+
 class ParseError(Exception):
 	def __init__(self, value):
 		self.value = value
@@ -39,6 +41,21 @@ class Number(ASTNode):
 	def eval(self):
 		return self.number
 
+class Identifier(ASTNode):
+	def __init__(self, identifier):
+		self.identifier = identifier
+	
+	def eval(self,context):
+		return context.variables[Identifier]
+
+class Assignment(ASTNode):
+	def __init__(self, identifier, value):
+		self.identifier = identifier
+		self.value = value
+	
+	def eval(self,context):
+		context.variables[self.identifier] = self.value.eval()
+
 class Parser:
 
 	op_dict = { "+": lambda a, b: a + b,
@@ -63,6 +80,37 @@ class Parser:
 
 		return ast
 
+	def _get_current_char(self):
+		return self.stream[self.stream_index]
+
+	def _assignment(self):
+		identif = self._identifier()
+		
+		self._whitespace()
+
+		if self._get_current_char() != "=":
+			raise ParseError("Expected equal sign in assigment operation")
+		else:
+			self.stream_index += 1
+
+		self._whitespace()
+		value = self._expression()
+
+		return Assignment(identif, value)
+
+	def _identifier(self):
+		if self._get_current_char() not in (string.ascii_letters + "_"):
+			raise ParseError("Identifier starts with invalid character")
+		else:
+			identifier = self._get_current_char()
+			self.stream_index += 1
+		
+		while self._get_current_char() in (string.ascii_letters + string.digits + "_"):
+			identifier += self._get_current_char()
+			self.stream_index += 1
+
+		return Identifier(identifier)
+
 	def _expression(self):
 		# Save stream pointer if we need to jump back
 		orig_ind = self.stream_index
@@ -80,7 +128,7 @@ class Parser:
 		# Trim
 		self._whitespace()
 
-		expr_op = self.stream[self.stream_index]
+		expr_op = self._get_current_char()
 		while expr_op in "+-":
 			self.stream_index += 1
 
@@ -101,21 +149,21 @@ class Parser:
 			self._whitespace()
 
 			# Look at whether next character in stream is a expr_op
-			expr_op = self.stream[self.stream_index]
+			expr_op = self._get_current_char()
 
 		return term_node
 
 
 	def _whitespace(self):
-		while len(self.stream) > self.stream_index and self.stream[self.stream_index].isspace():
+		while len(self.stream) > self.stream_index and self._get_current_char().isspace():
 			self.stream_index += 1
 
 	def _number(self):
 		orig_index = self.stream_index
 
 		number_str = ""
-		while self.stream[self.stream_index] in (self.digits + "."):
-			number_str += self.stream[self.stream_index]
+		while self._get_current_char() in (self.digits + "."):
+			number_str += self._get_current_char()
 			self.stream_index += 1
 
 		try:
@@ -126,34 +174,37 @@ class Parser:
 			return Number(number)
 		except ValueError:
 			self.stream_index = orig_index
-			return None
+			raise ParseError("Invalid number")
 
 
 	def _factor(self):
 		orig_index = self.stream_index
 
-		negateFlag = False
-		if self.stream[self.stream_index] == "-":
-			negateFlag = True
-			self.stream_index += 1
+		try:
+			negateFlag = False
+			if self._get_current_char() == "-":
+				negateFlag = True
+				self.stream_index += 1
 
-		if self.stream[self.stream_index] == "(":
-			self.stream_index += 1
+			if self._get_current_char() == "(":
+				self.stream_index += 1
 
-			node = self._expression()
+				node = self._expression()
 
-			if self.stream[self.stream_index] != ")":
+				if self._get_current_char() != ")":
+					self.stream_index = orig_index
+					return None
+				self.stream_index += 1
+			else:
+				node = self._number()
+
+			if node is None:
 				self.stream_index = orig_index
 				return None
-			self.stream_index += 1
-		else:
-			node = self._number()
 
-		if node is None:
-			self.stream_index = orig_index
-			return None
-
-		return Factor(node,negateFlag)
+			return Factor(node,negateFlag)
+		except ParseError:
+			return self._assignment()
 
 
 	def _term(self):
@@ -166,7 +217,7 @@ class Parser:
 
 		self._whitespace()
 
-		expr_op = self.stream[self.stream_index]
+		expr_op = self._get_current_char()
 		while expr_op in "*/%":
 			self.stream_index += 1
 
@@ -180,7 +231,7 @@ class Parser:
 			factor_node = BinaryExpression(factor_node, next_factor, self.op_dict[expr_op])
 
 			self._whitespace()
-			expr_op = self.stream[self.stream_index]
+			expr_op = self._get_current_char()
 
 		return factor_node
 
@@ -210,7 +261,7 @@ def main():
 			except ParseError as e:
 				print(e)
 			else:
-				print(expression_ast.eval())
+				print(expression_ast.eval({}))
 
 	except FileNotFoundError:
 		print("Please pass a valid filename")
