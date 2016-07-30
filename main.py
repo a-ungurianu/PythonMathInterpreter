@@ -22,7 +22,7 @@ class BinaryExpression(ASTNode):
 		self.operation = operation
 
 	def eval(self):
-		return self.operation(self.first_term, self.second_term)
+		return self.operation(self.first_term.eval(), self.second_term.eval())
 
 class Factor(ASTNode):
 	def __init__(self,child,negate=False):
@@ -54,10 +54,14 @@ class Parser:
 
 	def parse(self, exp_string):
 		self.stream_index = 0
-		self.stream = exp_string
+		self.stream = exp_string + "$"
 
 		ast = self._expression()
 
+		if self.stream[self.stream_index] != "$":
+			return None
+
+		return ast
 
 	def _expression(self):
 		# Save stream pointer if we need to jump back
@@ -105,7 +109,7 @@ class Parser:
 
 
 	def _whitespace(self):
-		while self.stream[self.stream_index].isspace():
+		while len(self.stream) > self.stream_index and self.stream[self.stream_index].isspace():
 			self.stream_index += 1
 
 	def _number(self):
@@ -205,7 +209,7 @@ def main():
 		# read every expression from the given file
 		for line in args.file:
 			expression_ast = expression_parser.parse(line)
-			print(evaluator.eval(expression_ast))
+			print(expression_ast.eval())
 
 	except FileNotFoundError:
 		print("Please pass a valid filename")
