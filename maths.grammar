@@ -1,9 +1,16 @@
-expression ::= {whitespace}, term, { {whitespace}, ( "+" | "-" ), {whitespace}, term }, {whitespace}
-nonzero_digit ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
-digit ::= "0" | nonzero_digit
-whitespace ::= " " | "\t"
-leftpar ::= "("
-rightpar ::= ")"
-number ::= nonzero_digit, { digit }, [".", digit, { digit }]
-factor ::= ["-"], (number | leftpar, expression, rightpar)
-term ::= factor { {whitespace}, ( "*" | "/" ), {whitespace}, factor }
+expression      ::= {whitespace}, term, { {whitespace}, ( "+" | "-" ), {whitespace}, term }, {whitespace}
+
+term            ::= factor { {whitespace}, ( "*" | "/" ), {whitespace}, factor }
+factor          ::= (["-"], (number | "(", expression, ")") | assignment)
+assignment      ::= identifier, {whitespace}, "=", {whitespace}, expression
+
+whitespace      ::= " " | "\t"
+
+identifier      ::= letter | '_' { identifier-char }
+identifier-char ::= '_' | letter | digit
+letter          ::= 'a' | 'b' | ... | 'y' | 'z' | 'A' | 'B' | ... | 'Y' | 'Z'
+
+number          ::= nonzero_digit, { digit }, [".", digit, { digit }]
+digit           ::= "0" | nonzero_digit
+nonzero_digit   ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
