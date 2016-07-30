@@ -115,16 +115,15 @@ class Parser:
 	def _number(self):
 		orig_index = self.stream_index
 
-		if self.stream[self.stream_index] not in self.non_zero_digits:
-			self.stream_index = orig_index
-			return None
-
 		number_str = ""
 		while self.stream[self.stream_index] in (self.digits + "."):
 			number_str += self.stream[self.stream_index]
 			self.stream_index += 1
 
 		try:
+			if number_str[0] == "0" and float(number_str) != 0:
+				raise ValueError()
+
 			number = float(number_str)
 			return Number(number)
 		except ValueError:
