@@ -93,7 +93,7 @@ class Parser:
 				return None
 
 			# Left-derive expression
-			term_node = BinaryExpression(term_node, next_term, op_dict[expr_op])
+			term_node = BinaryExpression(term_node, next_term, self.op_dict[expr_op])
 
 			# Trim
 			self._whitespace()
@@ -111,12 +111,12 @@ class Parser:
 	def _number(self):
 		orig_index = self.stream_index
 
-		if self.stream[self.stream_index] not in non_zero_digits:
+		if self.stream[self.stream_index] not in self.non_zero_digits:
 			self.stream_index = orig_index
 			return None
 
 		number_str = ""
-		while self.stream[self.stream_index] in (digits + "."):
+		while self.stream[self.stream_index] in (self.digits + "."):
 			number_str += self.stream[self.stream_index]
 			self.stream_index += 1
 
@@ -152,7 +152,7 @@ class Parser:
 			self.stream_index = orig_index
 			return None
 
-		return Factor(child,negateFlag)
+		return Factor(node,negateFlag)
 
 
 	def _term(self):
@@ -176,7 +176,7 @@ class Parser:
 				self.stream_index = orig_ind
 				return None
 
-			factor_node = BinaryExpression(factor_node, next_factor, op_dict[expr_op])
+			factor_node = BinaryExpression(factor_node, next_factor, self.op_dict[expr_op])
 
 			self._whitespace()
 			expr_op = self.stream[self.stream_index]
