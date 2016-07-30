@@ -14,32 +14,28 @@ class ASTNode(object):
 	def eval():
 		raise NotImplementedError
 
-class Expression(ASTNode):
+class BinaryExpression(ASTNode):
 
 	def __init__(self, first_term, second_term, operation):
 		self.first_term = first_term
 		self.second_term = second_term
 		self.operation = operation
 
-	def eval():
+	def eval(self):
 		return self.operation(self.first_term, self.second_term)
-
 
 class Factor(ASTNode):
 	def __init__(self,child,negate=False):
 		self.negate = negate
 		self.child = child
-	
+
 	def eval(self):
-		if self.negate:
-			return -self.child.eval()
-		else:
-			return self.child.eval()
+		return self.child.eval() * (-1 if self.negate else 1)
 
 class Number(ASTNode):
 	def __init__(self,number):
 		self.number = number
-	
+
 	def eval(self):
 		return self.number
 
@@ -96,13 +92,17 @@ class Parser:
 				self.stream_index = orig_ind
 				return None
 
-			term_node = Expression(term_node, next_term, op_dict[expr_op])
+			# Left-derive expression
+			term_node = BinaryExpression(term_node, next_term, op_dict[expr_op])
 
 			# Trim
-			_whitespace()
+			self._whitespace()
 
 			# Look at whether next character in stream is a expr_op
 			expr_op = self.stream[self.stream_index]
+
+		return term_node
+
 
 	def _whitespace(self):
 		while self.stream[self.stream_index].isspace():
@@ -119,7 +119,7 @@ class Parser:
 		while self.stream[self.stream_index] in (digits + "."):
 			number_str += self.stream[self.stream_index]
 			self.stream_index += 1
-		
+
 		try:
 			number = float(number_str)
 			return Number(number)
@@ -138,7 +138,7 @@ class Parser:
 
 		if self.stream[self.stream_index] == "(":
 			self.stream_index += 1
-			
+
 			node = self._expression()
 
 			if self.stream[self.stream_index] != ")":
@@ -147,16 +147,41 @@ class Parser:
 			self.stream_index += 1
 		else:
 			node = self._number()
-		
+
 		if node is None:
 			self.stream_index = orig_index
 			return None
-		
+
 		return Factor(child,negateFlag)
 
 
 	def _term(self):
-		pass
+		orig_ind = self.stream_index
+
+		factor_node = self._factor()
+		if factor_node is None:
+			self.stream_index = orig_ind
+			return None
+
+		self._whitespace()
+
+		expr_op = self.stream[self.stream_index]
+		while expr_op in "*/":
+			self.stream_index += 1
+
+			self._whitespace()
+
+			next_factor = self._factor()
+			if next_factor is None:
+				self.stream_index = orig_ind
+				return None
+
+			factor_node = BinaryExpression(factor_node, next_factor, op_dict[expr_op])
+
+			self._whitespace()
+			expr_op = self.stream[self.stream_index]
+
+		return factor_node
 
 class Evaluator:
 	def __init__(self):
