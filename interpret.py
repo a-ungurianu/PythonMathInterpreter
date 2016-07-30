@@ -57,13 +57,9 @@ class Parser:
 		self.stream_index = 0
 		self.stream = exp_string + "$"
 
-		try:
-			ast = self._expression()
-			if self.stream[self.stream_index] != "$":
-				return None
-		except ParseError as e:
-			print(e)
-			raise ParseError("Failed to parse expression")
+		ast = self._expression()
+		if self.stream[self.stream_index] != "$":
+			raise ParseError("The line wasn't just an expression")
 
 		return ast
 
@@ -123,7 +119,7 @@ class Parser:
 			self.stream_index += 1
 
 		try:
-			if number_str[0] == "0" and number_str.split(".")[0] != "0":
+			if number_str == "" or (number_str[0] == "0" and number_str.split(".")[0] != "0"):
 				raise ValueError
 
 			number = float(number_str)
